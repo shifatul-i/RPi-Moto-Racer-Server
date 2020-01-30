@@ -3,6 +3,8 @@ import socket
 # import thread module
 from _thread import start_new_thread
 import threading
+import json
+from json.decoder import JSONDecodeError
 
 print_lock = threading.Lock()
 
@@ -19,12 +21,13 @@ def threaded(client, addr):
             print_lock.release()
             break
 
-        # reverse the given string from client
-        # data = data[::-1]
-
-        # send back reversed string to client
-        print('Message from:', addr[0] + ':' + str(addr[1]), data.decode('utf-8'))
-        client.send(data)
+        try:
+            cmd = json.loads(data.decode('utf-8'))
+            print('Message from:', addr[0] + ':' + str(addr[1]), cmd)
+        except JSONDecodeError:
+            print("An exception occurred")
+        finally:
+            client.send(data)
 
     # connection closed
     client.close()
