@@ -5,8 +5,60 @@ from _thread import start_new_thread
 import threading
 import json
 from json.decoder import JSONDecodeError
+from adafruit_motorkit import MotorKit
 
 print_lock = threading.Lock()
+kit = MotorKit()
+
+
+def move_forward(angle, strength):
+    if angle > 0:
+        print("move_forward > 0")
+        kit.motor1.throttle = strength
+        kit.motor2.throttle = strength
+        kit.motor3.throttle = strength - strength / (180 / angle)
+        kit.motor4.throttle = strength - strength / (180 / angle)
+    elif angle < 0:
+        print("move_forward < 0")
+        kit.motor1.throttle = strength - strength / (180 / angle)
+        kit.motor2.throttle = strength - strength / (180 / angle)
+        kit.motor3.throttle = strength
+        kit.motor4.throttle = strength
+    else:
+        print("move_forward = 0")
+        kit.motor1.throttle = strength
+        kit.motor2.throttle = strength
+        kit.motor3.throttle = strength
+        kit.motor4.throttle = strength
+
+
+def move_backward(angle, strength):
+    print("move_backward")
+    kit.motor1.throttle = strength
+    kit.motor2.throttle = strength
+    kit.motor3.throttle = strength
+    kit.motor4.throttle = strength
+
+
+def stop():
+    print("stop")
+    kit.motor1.throttle = 0
+    kit.motor2.throttle = 0
+    kit.motor3.throttle = 0
+    kit.motor4.throttle = 0
+
+
+def race(cmd):
+    direction = cmd['direction']
+    angle = cmd['angle']
+    strength = cmd['strength'] / 100
+
+    if direction == 1:
+        move_forward(angle, strength)
+    elif direction == -1:
+        move_backward(angle, strength)
+    else:
+        stop()
 
 
 # thread function
@@ -24,10 +76,11 @@ def threaded(client, addr):
         try:
             cmd = json.loads(data.decode('utf-8'))
             print('Message from:', addr[0] + ':' + str(addr[1]), cmd)
+            race(cmd)
         except JSONDecodeError:
             print("An exception occurred")
-        finally:
-            client.send(data)
+        # finally:
+        client.sendall("33333\n".encode())
 
     # connection closed
     client.close()
