@@ -12,20 +12,31 @@ kit = MotorKit()
 
 
 def move_forward(angle, strength):
+    
+    if angle != 0:
+        strength_2 = strength - strength / (180 / abs(angle))
+    else:
+        strength_2 = strength
+        
+    if strength_2 > 1:
+        strength_2 = 1
+    elif strength_2 < -1:
+        strength_2 = -1
+        
     if angle > 0:
-        print("move_forward > 0")
-        kit.motor1.throttle = strength
-        kit.motor2.throttle = strength
-        kit.motor3.throttle = strength - strength / (180 / angle)
-        kit.motor4.throttle = strength - strength / (180 / angle)
-    elif angle < 0:
-        print("move_forward < 0")
-        kit.motor1.throttle = strength - strength / (180 / angle)
-        kit.motor2.throttle = strength - strength / (180 / angle)
+        print("move_forward, right:", strength_2, 'left:', strength)
+        kit.motor1.throttle = strength_2
+        kit.motor2.throttle = strength_2
         kit.motor3.throttle = strength
         kit.motor4.throttle = strength
+    elif angle < 0:
+        print("move_forward, right:", strength, 'left:', strength_2)
+        kit.motor1.throttle = strength
+        kit.motor2.throttle = strength
+        kit.motor3.throttle = strength_2
+        kit.motor4.throttle = strength_2
     else:
-        print("move_forward = 0")
+        print("move_forward, straight", strength)
         kit.motor1.throttle = strength
         kit.motor2.throttle = strength
         kit.motor3.throttle = strength
@@ -34,10 +45,7 @@ def move_forward(angle, strength):
 
 def move_backward(angle, strength):
     print("move_backward")
-    kit.motor1.throttle = strength
-    kit.motor2.throttle = strength
-    kit.motor3.throttle = strength
-    kit.motor4.throttle = strength
+    move_forward(angle, -strength)
 
 
 def stop():
@@ -51,7 +59,7 @@ def stop():
 def race(cmd):
     direction = cmd['direction']
     angle = cmd['angle']
-    strength = cmd['strength'] / 100
+    strength = -cmd['strength'] / 100
 
     if direction == 1:
         move_forward(angle, strength)
@@ -79,6 +87,7 @@ def threaded(client, addr):
             race(cmd)
         except JSONDecodeError:
             print("An exception occurred")
+            print('Message from:', addr[0] + ':' + str(addr[1]), cmd)
         # finally:
         client.sendall("33333\n".encode())
 
@@ -87,10 +96,12 @@ def threaded(client, addr):
 
 
 def main():
+    stop()
     host = ""
     port = 9999
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((host, port))
     max_conn = 5
     s.listen(max_conn)
@@ -110,8 +121,8 @@ def main():
             start_new_thread(threaded, (client, addr,))
 
     except KeyboardInterrupt:
-        print('Keyboard Interrupt!')
         s.close()
+        print('Keyboard Interrupt!')
 
 
 if __name__ == '__main__':
