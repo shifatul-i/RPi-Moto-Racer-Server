@@ -60,7 +60,12 @@ def race(cmd):
     direction = cmd['direction']
     angle = cmd['angle']
     strength = -cmd['strength'] / 100
-
+    
+    if strength > 1:
+        strength = 1
+    elif strength < -1:
+        strength = -1
+    
     if direction == 1:
         move_forward(angle, strength)
     elif direction == -1:
